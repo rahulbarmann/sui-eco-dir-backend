@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../services/prismaService.js';
 import { ProjectService } from '../services/projectService.js';
+import { requireAuth } from './authRoutes.js';
 
 const router = express.Router();
 const projectService = new ProjectService();
@@ -8,10 +9,9 @@ const projectService = new ProjectService();
 // Dashboard stats endpoint
 router.get(
   '/dashboard',
+  requireAuth,
   async (req: express.Request, res: express.Response): Promise<void> => {
     try {
-      console.log('Fetching dashboard stats from database...');
-
       // Get counts from database
       const [
         totalProjects,
@@ -19,6 +19,10 @@ router.get(
         totalVideos,
         recentProjects,
         topCategories,
+        featuredProjectCount,
+        featuredVideoCount,
+        projectCreatedAtList,
+        categoryCountsRaw,
       ] = await Promise.all([
         prisma.project.count(),
         prisma.project.count({ where: { status: 'PUBLISHED' } }),
@@ -39,27 +43,50 @@ router.get(
           take: 5,
           orderBy: { projectCount: 'desc' },
         }),
+        prisma.project.count({ where: { featured: true } }),
+        prisma.projectVideo.count({ where: { featured: true } }),
+        prisma.project.findMany({ select: { createdAt: true } }),
+        prisma.projectCategory.groupBy({
+          by: ['categoryId'],
+          _count: { categoryId: true },
+        }),
       ]);
 
-      console.log('Database results:', {
-        totalProjects,
-        activeProjects,
-        totalVideos,
-        recentProjectsCount: recentProjects.length,
-        topCategoriesCount: topCategories.length,
-        firstProject: recentProjects[0]?.name,
-        firstCategory: topCategories[0]?.name,
-      });
+      // Build monthly project counts for last 6 months
+      const now = new Date();
+      const months: string[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const label = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        months.push(label);
+      }
+      const monthlyCountMap: Record<string, number> = months.reduce(
+        (acc, m) => {
+          acc[m] = 0;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
+      for (const p of projectCreatedAtList) {
+        const d = p.createdAt;
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key in monthlyCountMap) monthlyCountMap[key] += 1;
+      }
+      const monthlyProjectCounts = months.map(m => ({
+        month: m,
+        count: monthlyCountMap[m],
+      }));
 
       res.json({
         success: true,
         data: {
-          debug: 'USING_DATABASE_QUERIES_V2',
-          test: 'THIS_IS_A_TEST',
           totalProjects,
           activeProjects,
           totalCategories: await prisma.category.count(),
           totalVideos,
+          monthlyProjectCounts,
+          featuredProjectCount,
+          featuredVideoCount,
           recentProjects: recentProjects.map(project => ({
             id: project.id,
             name: project.name,
@@ -85,6 +112,22 @@ router.get(
             projectCount: category.projectCount,
             createdAt: category.createdAt.toISOString(),
           })),
+          // Accurate category counts derived from relations
+          categoryCounts: await (async () => {
+            const idToCount: Record<string, number> = Object.fromEntries(
+              categoryCountsRaw.map(row => [
+                row.categoryId,
+                row._count.categoryId,
+              ])
+            );
+            const cats = await prisma.category.findMany({
+              select: { id: true, name: true },
+            });
+            return cats.map(c => ({
+              name: c.name,
+              projectCount: idToCount[c.id] || 0,
+            }));
+          })(),
         },
       });
     } catch (error) {
@@ -99,6 +142,7 @@ router.get(
 
 router.get(
   '/projects',
+  requireAuth,
   async (req: express.Request, res: express.Response): Promise<void> => {
     try {
       const page = parseInt(req.query.page as string) || 1;
@@ -203,6 +247,7 @@ router.get(
 
 router.get(
   '/projects/:id',
+  requireAuth,
   async (req: express.Request, res: express.Response): Promise<void> => {
     try {
       const { id } = req.params;
@@ -280,6 +325,7 @@ router.get(
 
 router.post(
   '/projects',
+  requireAuth,
   async (req: express.Request, res: express.Response): Promise<void> => {
     try {
       console.log('Creating project with data:', req.body);
@@ -344,6 +390,7 @@ router.post(
 
 router.put(
   '/projects/:id',
+  requireAuth,
   async (req: express.Request, res: express.Response): Promise<void> => {
     try {
       const { id } = req.params;
@@ -384,6 +431,7 @@ router.put(
 
 router.delete(
   '/projects/:id',
+  requireAuth,
   async (req: express.Request, res: express.Response): Promise<void> => {
     try {
       const { id } = req.params;
@@ -440,6 +488,7 @@ router.delete(
 
 router.get(
   '/categories',
+  requireAuth,
   async (req: express.Request, res: express.Response): Promise<void> => {
     try {
       const categories = await prisma.category.findMany({
@@ -470,6 +519,7 @@ router.get(
 
 router.get(
   '/videos',
+  requireAuth,
   async (req: express.Request, res: express.Response): Promise<void> => {
     try {
       const page = parseInt(req.query.page as string) || 1;

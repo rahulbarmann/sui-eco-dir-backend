@@ -1,52 +1,89 @@
 import express from 'express';
 import { z } from 'zod';
+import prisma from '../services/prismaService.js';
+import bcrypt from 'bcryptjs';
+import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 
 const router = express.Router();
 
-// Default admin credentials (in production, these should be in a database with hashed passwords)
-const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'admin123',
-  id: '1',
-  role: 'admin' as const,
-};
-
-// Login validation schema
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
   password: z.string().min(1, 'Password is required'),
 });
 
+function signToken(payload: { id: string; role: string; username: string }) {
+  const secret: Secret = (process.env.JWT_SECRET ||
+    'dev-secret-change-me') as Secret;
+  const expiresInEnv = process.env.JWT_EXPIRES_IN || '7d';
+  const options: SignOptions = { expiresIn: expiresInEnv as any };
+  return jwt.sign(payload, secret, options);
+}
+
+function verifyToken(token: string) {
+  const secret: Secret = (process.env.JWT_SECRET ||
+    'dev-secret-change-me') as Secret;
+  return jwt.verify(token, secret) as {
+    id: string;
+    role: string;
+    username: string;
+    iat: number;
+    exp: number;
+  };
+}
+
+export function requireAuth(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+    (req as any).user = decoded;
+    next();
+  } catch (e) {
+    res.status(401).json({ success: false, error: 'Invalid token' });
+  }
+}
+
 // Login endpoint
-router.post('/login', (req: express.Request, res: express.Response): void => {
+router.post('/login', async (req: express.Request, res: express.Response) => {
   try {
     const { username, password } = loginSchema.parse(req.body);
 
-    // Check credentials
-    if (
-      username === ADMIN_CREDENTIALS.username &&
-      password === ADMIN_CREDENTIALS.password
-    ) {
-      // In a real app, you'd generate a JWT token here
-      const token = 'mock-jwt-token-' + Date.now();
-
-      res.json({
-        success: true,
-        data: {
-          user: {
-            id: ADMIN_CREDENTIALS.id,
-            username: ADMIN_CREDENTIALS.username,
-            role: ADMIN_CREDENTIALS.role,
-          },
-          token,
-        },
-      });
-    } else {
-      res.status(401).json({
-        success: false,
-        error: 'Invalid credentials',
-      });
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      res.status(401).json({ success: false, error: 'Invalid credentials' });
+      return;
     }
+
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isValid) {
+      res.status(401).json({ success: false, error: 'Invalid credentials' });
+      return;
+    }
+
+    const token = signToken({
+      id: user.id,
+      role: user.role,
+      username: user.username,
+    });
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+        },
+        token,
+      },
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({
@@ -72,27 +109,29 @@ router.post('/logout', (req: express.Request, res: express.Response): void => {
 });
 
 // Get current user endpoint
-router.get('/me', (req: express.Request, res: express.Response): void => {
-  // In a real app, you'd verify the JWT token here
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({
-      success: false,
-      error: 'No token provided',
+router.get(
+  '/me',
+  requireAuth,
+  async (req: express.Request, res: express.Response) => {
+    const userId = (req as any).user?.id as string | undefined;
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+      },
     });
-    return;
   }
-
-  // For now, just return the admin user
-  res.json({
-    success: true,
-    data: {
-      id: ADMIN_CREDENTIALS.id,
-      username: ADMIN_CREDENTIALS.username,
-      role: ADMIN_CREDENTIALS.role,
-    },
-  });
-});
+);
 
 export { router as authRoutes };

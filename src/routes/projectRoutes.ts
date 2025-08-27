@@ -1,5 +1,6 @@
 import express, { Router } from 'express';
 import { ProjectController } from '../controllers/projectController.js';
+import { requireAuth } from './authRoutes.js';
 
 const router: express.Router = Router();
 const projectController = new ProjectController();
@@ -20,12 +21,12 @@ router.get('/category/:category', projectController.getProjectsByCategory);
 router.get('/:id', projectController.getProjectById);
 
 // POST /api/v1/projects - Create new project
-router.post('/', projectController.createProject);
+router.post('/', requireAuth, projectController.createProject);
 
 // PUT /api/v1/projects/:id - Update project
-router.put('/:id', projectController.updateProject);
+router.put('/:id', requireAuth, projectController.updateProject);
 
 // DELETE /api/v1/projects/:id - Delete project
-router.delete('/:id', projectController.deleteProject);
+router.delete('/:id', requireAuth, projectController.deleteProject);
 
 export { router as projectRoutes };

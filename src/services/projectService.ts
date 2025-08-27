@@ -259,6 +259,18 @@ export class ProjectService {
       socialLinks,
     } = projectData;
 
+    if (projectData.featured) {
+      const featuredCount = await prisma.project.count({
+        where: { featured: true },
+      });
+      if (featuredCount >= 3) {
+        throw createError(
+          400,
+          'Maximum of 3 featured projects allowed. Unfeature an existing project first.'
+        );
+      }
+    }
+
     const newProject = await prisma.project.create({
       data: {
         name,
@@ -342,6 +354,23 @@ export class ProjectService {
 
     if (!existingProject) {
       throw createError('404', 'Project not found');
+    }
+
+    // Enforce featured limit: only allow setting to featured if there are < 3 or it was already featured
+    if (
+      typeof updateData.featured === 'boolean' &&
+      updateData.featured === true &&
+      !existingProject.featured
+    ) {
+      const featuredCount = await prisma.project.count({
+        where: { featured: true },
+      });
+      if (featuredCount >= 3) {
+        throw createError(
+          400,
+          'Maximum of 3 featured projects allowed. Unfeature an existing project first.'
+        );
+      }
     }
 
     if (updateData.categories) {

@@ -1,5 +1,6 @@
 import express, { Router } from 'express';
 import { VideoController } from '../controllers/videoController.js';
+import { requireAuth } from './authRoutes.js';
 
 const router: express.Router = Router();
 const videoController = new VideoController();
@@ -20,9 +21,18 @@ router.get('/:id', videoController.getVideoById.bind(videoController));
 // Admin routes (for admin frontend)
 router.post(
   '/project/:projectId',
+  requireAuth,
   videoController.createVideo.bind(videoController)
 );
-router.put('/:id', videoController.updateVideo.bind(videoController));
-router.delete('/:id', videoController.deleteVideo.bind(videoController));
+router.put(
+  '/:id',
+  requireAuth,
+  videoController.updateVideo.bind(videoController)
+);
+router.delete(
+  '/:id',
+  requireAuth,
+  videoController.deleteVideo.bind(videoController)
+);
 
 export { router as videoRoutes };

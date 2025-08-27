@@ -272,6 +272,19 @@ export class VideoService {
       throw createError(409, 'Video with this playback ID already exists');
     }
 
+    // Enforce featured limit
+    if (featured) {
+      const featuredCount = await prisma.projectVideo.count({
+        where: { featured: true },
+      });
+      if (featuredCount >= 3) {
+        throw createError(
+          400,
+          'Maximum of 3 featured videos allowed. Unfeature an existing video first.'
+        );
+      }
+    }
+
     // Create video - categories are inherited from project
     const newVideo = await prisma.projectVideo.create({
       data: {
@@ -330,6 +343,23 @@ export class VideoService {
 
     if (!existingVideo) {
       throw createError(404, 'Video not found');
+    }
+
+    // Enforce featured limit when toggling on
+    if (
+      typeof updateData.featured === 'boolean' &&
+      updateData.featured === true &&
+      !existingVideo?.featured
+    ) {
+      const featuredCount = await prisma.projectVideo.count({
+        where: { featured: true },
+      });
+      if (featuredCount >= 3) {
+        throw createError(
+          400,
+          'Maximum of 3 featured videos allowed. Unfeature an existing video first.'
+        );
+      }
     }
 
     // If updating playbackId, check for conflicts

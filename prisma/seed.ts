@@ -1,19 +1,19 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seeding...');
+  console.log('Starting database seeding...');
 
-  // Clear existing data
   await prisma.projectImage.deleteMany();
   await prisma.projectVideo.deleteMany();
   await prisma.socialLinks.deleteMany();
   await prisma.projectCategory.deleteMany();
   await prisma.project.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.user.deleteMany();
 
-  // Create categories
   const categories = await Promise.all([
     prisma.category.create({
       data: {
@@ -97,18 +97,29 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Categories created');
+  console.log('Categories created');
 
-  // Helper function to get category by name
+  // Create default admin user if not exists
+  const adminPassword = 'admin123';
+  const passwordHash = await bcrypt.hash(adminPassword, 10);
+  await prisma.user.create({
+    data: {
+      username: 'admin',
+      passwordHash,
+      role: 'admin',
+    },
+  });
+  console.log(
+    'Default admin user created (username: admin, password: admin123)'
+  );
+
   const getCategoryId = (name: string) => {
     const category = categories.find(c => c.name === name);
     if (!category) throw new Error(`Category not found: ${name}`);
     return category.id;
   };
 
-  // Create projects with comprehensive data
   const projects = await Promise.all([
-    // Aftermath Finance (from frontend)
     prisma.project.create({
       data: {
         name: 'Aftermath Finance',
@@ -245,7 +256,6 @@ async function main() {
       },
     }),
 
-    // Suilend (from frontend)
     prisma.project.create({
       data: {
         name: 'Suilend',
@@ -296,11 +306,10 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Projects created');
+  console.log('Projects created');
 
-  console.log('✅ Projects and videos created');
+  console.log('Projects and videos created');
 
-  // Update category project counts
   for (const category of categories) {
     const projectCount = await prisma.projectCategory.count({
       where: { categoryId: category.id },
@@ -312,17 +321,17 @@ async function main() {
     });
   }
 
-  console.log('✅ Category project counts updated');
+  console.log('Category project counts updated');
 
-  console.log('🎉 Database seeding completed successfully!');
+  console.log('Database seeding completed successfully!');
   console.log(
-    `📊 Created ${categories.length} categories and ${projects.length} projects`
+    `Created ${categories.length} categories and ${projects.length} projects`
   );
 }
 
 main()
   .catch(e => {
-    console.error('❌ Error during seeding:', e);
+    console.error('Error during seeding:', e);
     process.exit(1);
   })
   .finally(async () => {

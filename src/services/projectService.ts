@@ -9,29 +9,30 @@ import {
   Prisma,
   Project as PrismaProject,
   ProjectVideo as PrismaProjectVideo,
+  ProjectStatus,
 } from '@prisma/client';
 import { createError } from '../middleware/errorHandler.js';
 import prisma from './prismaService.js';
 
-const mapStatus = (status: string): 'published' | 'unpublished' => {
+const mapStatus = (status: ProjectStatus): 'published' | 'unpublished' => {
   switch (status) {
-    case 'PUBLISHED':
+    case ProjectStatus.PUBLISHED:
       return 'published';
-    case 'UNPUBLISHED':
+    case ProjectStatus.UNPUBLISHED:
       return 'unpublished';
     default:
       return 'unpublished';
   }
 };
 
-const mapStatusToDb = (status: string): 'PUBLISHED' | 'UNPUBLISHED' => {
-  if (!status) return 'UNPUBLISHED';
+const mapStatusToDb = (status: string): ProjectStatus => {
+  if (!status) return ProjectStatus.UNPUBLISHED;
   const normalized = String(status).toUpperCase();
-  if (normalized === 'PUBLISHED') return 'PUBLISHED';
-  if (normalized === 'UNPUBLISHED') return 'UNPUBLISHED';
-  if (status === 'published') return 'PUBLISHED';
-  if (status === 'unpublished') return 'UNPUBLISHED';
-  return 'UNPUBLISHED';
+  if (normalized === 'PUBLISHED') return ProjectStatus.PUBLISHED;
+  if (normalized === 'UNPUBLISHED') return ProjectStatus.UNPUBLISHED;
+  if (status === 'published') return ProjectStatus.PUBLISHED;
+  if (status === 'unpublished') return ProjectStatus.UNPUBLISHED;
+  return ProjectStatus.UNPUBLISHED;
 };
 
 const transformProjectForResponse = (project: any): Project => ({
@@ -281,7 +282,7 @@ export class ProjectService {
         website,
         videoUrl,
         featured: featured || false,
-        status: status ? mapStatusToDb(status) : 'UNPUBLISHED',
+        status: status ? mapStatusToDb(status) : ProjectStatus.UNPUBLISHED,
 
         isHiring: isHiring || false,
         careerPageUrl,

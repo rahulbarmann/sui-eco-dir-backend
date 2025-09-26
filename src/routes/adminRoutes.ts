@@ -2,6 +2,7 @@ import express from 'express';
 import prisma from '../services/prismaService.js';
 import { ProjectService } from '../services/projectService.js';
 import { requireAuth } from './authRoutes.js';
+import { ProjectStatus } from '@prisma/client';
 
 const router = express.Router();
 const projectService = new ProjectService();
@@ -25,7 +26,7 @@ router.get(
         categoryCountsRaw,
       ] = await Promise.all([
         prisma.project.count(),
-        prisma.project.count({ where: { status: 'PUBLISHED' } }),
+        prisma.project.count({ where: { status: ProjectStatus.PUBLISHED } }),
         prisma.projectVideo.count(),
         prisma.project.findMany({
           take: 5,
@@ -99,7 +100,9 @@ router.get(
             banner: '', // Not in schema, using empty string
             featured: project.featured,
             status:
-              project.status === 'PUBLISHED' ? 'published' : 'unpublished',
+              project.status === ProjectStatus.PUBLISHED
+                ? 'published'
+                : 'unpublished',
             createdAt: project.createdAt.toISOString(),
             updatedAt: project.updatedAt.toISOString(),
           })),

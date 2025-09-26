@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import { ProjectController } from '../controllers/projectController.js';
 import { requireAuth } from './authRoutes.js';
 
-const router: express.Router = Router();
+const router: express.Router = express.Router();
 const projectController = new ProjectController();
 
 // GET /api/v1/projects - Get all projects with filtering and pagination

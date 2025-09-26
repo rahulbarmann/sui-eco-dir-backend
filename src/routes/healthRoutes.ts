@@ -1,6 +1,6 @@
 import express, { Router, Request, Response } from 'express';
 
-const router: express.Router = Router();
+const router: express.Router = express.Router();
 
 // GET /api/v1/health - Basic health check
 router.get('/', (req: Request, res: Response) => {

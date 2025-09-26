@@ -1,10 +1,10 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../services/prismaService.js';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),

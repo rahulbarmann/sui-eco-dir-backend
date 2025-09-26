@@ -1,10 +1,10 @@
-import express from 'express';
+import express, { Router } from 'express';
 import prisma from '../services/prismaService.js';
 import { ProjectService } from '../services/projectService.js';
 import { requireAuth } from './authRoutes.js';
 import { ProjectStatus } from '@prisma/client';
 
-const router = express.Router();
+const router: express.Router = express.Router();
 const projectService = new ProjectService();
 
 // Dashboard stats endpoint

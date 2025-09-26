@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import { VideoController } from '../controllers/videoController.js';
 import { requireAuth } from './authRoutes.js';
 
-const router: express.Router = Router();
+const router: express.Router = express.Router();
 const videoController = new VideoController();
 
 // Public routes (for frontend)

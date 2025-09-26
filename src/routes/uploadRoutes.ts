@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import multer from 'multer';
 import { UploadController } from '../controllers/uploadController.js';
 
-const router: express.Router = Router();
+const router: express.Router = express.Router();
 const uploadController = new UploadController();
 
 // Configure multer for memory storage

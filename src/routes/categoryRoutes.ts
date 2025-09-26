@@ -1,7 +1,7 @@
 import express, { Router } from 'express';
 import { CategoryController } from '../controllers/categoryController.js';
 
-const router: express.Router = Router();
+const router: express.Router = express.Router();
 const categoryController = new CategoryController();
 
 // GET /api/v1/categories - Get all categories

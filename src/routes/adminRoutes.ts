@@ -1,4 +1,4 @@
-import express, { Router } from 'express';
+import express from 'express';
 import prisma from '../services/prismaService.js';
 import { ProjectService } from '../services/projectService.js';
 import { requireAuth } from './authRoutes.js';
@@ -88,11 +88,11 @@ router.get(
           monthlyProjectCounts,
           featuredProjectCount,
           featuredVideoCount,
-          recentProjects: recentProjects.map(project => ({
+          recentProjects: recentProjects.map((project: any) => ({
             id: project.id,
             name: project.name,
             description: project.description,
-            categories: project.categories.map(pc => pc.category.name),
+            categories: project.categories.map((pc: any) => pc.category.name),
             website: project.socialLinks?.website || '',
             twitter: project.socialLinks?.twitter || '',
             github: project.socialLinks?.github || '',
@@ -106,7 +106,7 @@ router.get(
             createdAt: project.createdAt.toISOString(),
             updatedAt: project.updatedAt.toISOString(),
           })),
-          topCategories: topCategories.map(category => ({
+          topCategories: topCategories.map((category: any) => ({
             id: category.id,
             name: category.name,
             description: category.description,
@@ -118,7 +118,7 @@ router.get(
           // Accurate category counts derived from relations
           categoryCounts: await (async () => {
             const idToCount: Record<string, number> = Object.fromEntries(
-              categoryCountsRaw.map(row => [
+              categoryCountsRaw.map((row: any) => [
                 row.categoryId,
                 row._count.categoryId,
               ])
@@ -126,7 +126,7 @@ router.get(
             const cats = await prisma.category.findMany({
               select: { id: true, name: true },
             });
-            return cats.map(c => ({
+            return cats.map((c: any) => ({
               name: c.name,
               projectCount: idToCount[c.id] || 0,
             }));
@@ -207,12 +207,12 @@ router.get(
       res.json({
         success: true,
         data: {
-          projects: projects.map(project => ({
+          projects: projects.map((project: any) => ({
             id: project.id,
             name: project.name,
             tagline: (project as any).tagline || '',
             description: project.description,
-            categories: project.categories.map(pc => pc.category.name),
+            categories: project.categories.map((pc: any) => pc.category.name),
             status: project.status,
             featured: project.featured,
             website: project.socialLinks?.website || '',
@@ -220,7 +220,7 @@ router.get(
             github: project.socialLinks?.github || '',
             logo: project.logo || '',
             heroImage: (project as any).heroImage || '',
-            images: project.images.map(img => img.url),
+            images: project.images.map((img: any) => img.url),
             isHiring: (project as any).isHiring || false,
             careerPageUrl: (project as any).careerPageUrl || null,
             isOpenForBounty: (project as any).isOpenForBounty || false,
@@ -288,7 +288,7 @@ router.get(
           name: project.name,
           tagline: (project as any).tagline || '',
           description: project.description,
-          categories: project.categories.map(pc => pc.category.name),
+          categories: project.categories.map((pc: any) => pc.category.name),
           status: project.status,
           featured: project.featured,
           website: project.socialLinks?.website || '',
@@ -296,14 +296,14 @@ router.get(
           github: project.socialLinks?.github || '',
           logo: project.logo || '',
           heroImage: (project as any).heroImage || '',
-          images: project.images.map(img => img.url),
+          images: project.images.map((img: any) => img.url),
           isHiring: (project as any).isHiring || false,
           careerPageUrl: (project as any).careerPageUrl || null,
           isOpenForBounty: (project as any).isOpenForBounty || false,
           bountySubmissionUrl: (project as any).bountySubmissionUrl || null,
           isOpenSource: (project as any).isOpenSource || false,
           githubUrl: (project as any).githubUrl || null,
-          videos: project.videos.map(video => ({
+          videos: project.videos.map((video: any) => ({
             id: video.id,
             title: video.title,
             description: video.description || '',
@@ -463,7 +463,7 @@ router.delete(
       });
 
       await Promise.all(
-        project.categories.map(pc =>
+        project.categories.map((pc: any) =>
           prisma.category.update({
             where: { id: pc.category.id },
             data: {
@@ -500,7 +500,7 @@ router.get(
 
       res.json({
         success: true,
-        data: categories.map(category => ({
+        data: categories.map((category: any) => ({
           id: category.id,
           name: category.name,
           description: category.description,
@@ -569,7 +569,7 @@ router.get(
       res.json({
         success: true,
         data: {
-          videos: videos.map(video => ({
+          videos: videos.map((video: any) => ({
             id: video.id,
             title: video.title,
             description: video.description || '',
@@ -578,7 +578,9 @@ router.get(
             projectId: video.projectId,
             projectName: video.project.name,
             featured: video.featured,
-            categories: video.project.categories.map(pc => pc.category.name),
+            categories: video.project.categories.map(
+              (pc: any) => pc.category.name
+            ),
             createdAt: video.createdAt.toISOString(),
           })),
           pagination: {
@@ -599,7 +601,7 @@ router.get(
   }
 );
 
-router.post('/upload', (req: express.Request, res: express.Response): void => {
+router.post('/upload', (_req: express.Request, res: express.Response): void => {
   res.json({
     success: true,
     data: {

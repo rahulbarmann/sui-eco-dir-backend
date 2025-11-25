@@ -184,22 +184,18 @@ async function main() {
               title: 'Aftermath Finance Overview',
               description:
                 'Learn about Aftermath Finance and its innovative DeFi solutions',
-              videoUrl: 'https://youtube.com/watch?v=aftermath-overview',
+              playbackId: 'aftermath-overview-playback-id',
               thumbnail:
                 'https://c.animaapp.com/mdhco1b4hv2VQG/img/frame-95.png',
-              duration: 180,
               featured: true,
-              order: 1,
             },
             {
               title: 'Aftermath Finance Tutorial',
               description: 'Step-by-step guide to using Aftermath Finance',
-              videoUrl: 'https://youtube.com/watch?v=aftermath-tutorial',
+              playbackId: 'aftermath-tutorial-playback-id',
               thumbnail:
                 'https://c.animaapp.com/mdhco1b4hv2VQG/img/frame-95-2.png',
-              duration: 300,
               featured: false,
-              order: 2,
             },
           ],
         },
@@ -244,12 +240,10 @@ async function main() {
               title: 'Scallop Protocol Introduction',
               description:
                 'Discover Scallop, the pioneering peer-to-peer Money Market',
-              videoUrl: 'https://youtube.com/watch?v=scallop-intro',
+              playbackId: 'scallop-intro-playback-id',
               thumbnail:
                 'https://c.animaapp.com/mdhco1b4hv2VQG/img/frame-95-4.png',
-              duration: 240,
               featured: true,
-              order: 1,
             },
           ],
         },
@@ -293,12 +287,10 @@ async function main() {
             {
               title: 'Suilend: #1 DeFi Protocol on Sui',
               description: 'Learn about Suilend and the SEND token',
-              videoUrl: 'https://youtube.com/watch?v=suilend-overview',
+              playbackId: 'suilend-overview-playback-id',
               thumbnail:
                 'https://c.animaapp.com/mdhco1b4hv2VQG/img/frame-95-5.png',
-              duration: 200,
               featured: true,
-              order: 1,
             },
           ],
         },
